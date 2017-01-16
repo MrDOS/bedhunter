@@ -1,0 +1,12 @@
+{
+    "query": {
+        "interval": 600000,
+        "prefs": {
+            "categoryId": 37,
+            "locationId": 1700185
+        },
+        "params": {
+            "adType": "OFFER"
+        }
+    }
+}
