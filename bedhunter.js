@@ -16,6 +16,7 @@ config.query.prefs.scrapeInnerAd = false;
 
 var db = new sqlite3.Database('bedhunter.db');
 db.run('create table if not exists ad (url text primary key, summary json, details json)');
+db.run('create table if not exists score (url text, heuristic text, score double)');
 
 /**
  * Check Kijiji for new ads. Does not query into them.
@@ -29,9 +30,25 @@ var queryAds = function () {
 
         var stmt = db.prepare('insert or ignore into ad (url, summary) values (?, ?)');
         ads.forEach(function (ad) {
-            stmt.run(ad.url, JSON.stringify(ad));
+            stmt.run(ad.link, JSON.stringify(ad));
         });
         stmt.finalize();
+
+        scrapeAds();
+    });
+};
+
+var scrapeAds = function () {
+    var stmt = db.prepare('update ad set details = ? where url = ?');
+    db.each('select url from ad where details is null', function (err, ad) {
+        if (err != null) {
+            console.log(err);
+            return;
+        }
+
+        kijiji.scrape(ad.url, function (err, details) {
+            stmt.run(JSON.stringify(details), ad.url);
+        });
     });
 };
 
