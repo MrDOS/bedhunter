@@ -13,6 +13,7 @@
   "author": "Samuel Coleman <samuel@seenet.ca>",
   "license": "WTFPL",
   "dependencies": {
+    "@google/maps": "^0.3.1",
     "kijiji-scraper": "git+https://github.com/mwpenny/kijiji-scraper.git",
     "sqlite3": "^3.1.8"
   }

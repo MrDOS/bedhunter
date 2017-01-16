@@ -1,3 +1,4 @@
 node_modules/
+heuristics/*.js
 config.json
 bedhunter.db

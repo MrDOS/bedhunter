@@ -14,6 +14,16 @@ try {
 }
 config.query.prefs.scrapeInnerAd = false;
 
+var heuristics = {};
+fs.readdirSync(__dirname + '/heuristics').forEach(function(file) {
+    if (file.match(/.js$/)) {
+        var heuristic = require('./heuristics/' + file);
+        for (key in heuristic) {
+            heuristics[key] = heuristic[key];
+        }
+    }
+});
+
 var db = new sqlite3.Database('bedhunter.db');
 db.run('create table if not exists ad (url text primary key, summary json, details json)');
 db.run('create table if not exists score (url text, heuristic text, score double)');
@@ -28,28 +38,56 @@ var queryAds = function () {
             return;
         }
 
-        var stmt = db.prepare('insert or ignore into ad (url, summary) values (?, ?)');
+        var stmt = db.prepare('insert into ad (url, summary) values (?, ?)');
         ads.forEach(function (ad) {
-            stmt.run(ad.link, JSON.stringify(ad));
-        });
-        stmt.finalize();
+            stmt.run(ad.link, JSON.stringify(ad), function (err) {
+                if (err != null)
+                {
+                    return;
+                }
 
-        scrapeAds();
+                scrapeAd(ad);
+            });
+        });
     });
 };
 
-var scrapeAds = function () {
+var scrapeAd = function (ad) {
     var stmt = db.prepare('update ad set details = ? where url = ?');
-    db.each('select url from ad where details is null', function (err, ad) {
+
+    kijiji.scrape(ad.link, function (err, details) {
         if (err != null) {
             console.log(err);
             return;
         }
 
-        kijiji.scrape(ad.url, function (err, details) {
-            stmt.run(JSON.stringify(details), ad.url);
+        ad.innerAd = details;
+        stmt.run(JSON.stringify(details), ad.link, function () {
+            if (err != null)
+            {
+                console.log(err);
+                return;
+            }
+
+            scoreAd(ad);
         });
     });
+};
+
+var scoreAd = function (ad) {
+    var stmt = db.prepare('insert into score (url, heuristic, score) values (?, ?, ?)');
+
+    for (heuristic in heuristics) {
+        heuristics[heuristic](ad, function (err, score) {
+            if (err != null) {
+                console.log(err);
+                return;
+            }
+
+            console.log(ad.title + ' -> ' + heuristic + ': ' + score + '/100');
+            stmt.run(ad.link, heuristic, score);
+        });
+    }
 };
 
 queryAds();
