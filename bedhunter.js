@@ -208,14 +208,25 @@ select ad.link,
                     ads[row.link].scores[row.heuristic] = row.score;
                 });
 
-                var filteredAds = Object.values(ads).filter(
-                    (ad) => Object.values(ad.scores).filter(
-                        (score) => score < config.notification.scoreThreshold).length === 0);
+                var filteredAds = [];
+                for (var ad in ads) {
+                    var pass = true;
+                    for (var score in ads[ad].scores) {
+                        if (ads[ad].scores[score] < config.notification.scoreThreshold) {
+                            pass = false;
+                            break;
+                        }
+                    }
+
+                    if (pass) {
+                        filteredAds.push(ads[ad]);
+                    }
+                }
 
                 filteredAds.forEach(function (ad) {
                     var body = ad.title + ' (' + ad.price + ')\n' + ad.link + '\n';
                     for (var score in ad.scores) {
-                        body += '\n' + score + ': ' + ad.scores[score];
+                        body += '\n' + score + ': ' + parseInt(ad.scores[score]);
                     }
 
                     twilioClient.messages.create({
