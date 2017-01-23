@@ -182,12 +182,15 @@ select *
                ad.details,
                onescore.heuristic,
                onescore.score,
-               min(allscore.score) as minscore
+               min(allscore.score) as minscore,
+               count(allscore.score) as scorecount
           from ad, score onescore, score allscore
          where onescore.link = ad.link
            and allscore.link = ad.link
+           and ad.notified = 0
       group by ad.link, onescore.heuristic)
  where minscore >= ?
+   and scorecount >= (select count(*) from heuristic)
                `, config.notification.scoreThreshold, function (err, rows) {
             if (err !== null) {
                 console.log(err);
