@@ -3,6 +3,7 @@
 var fs = require('fs');
 var kijiji = require('kijiji-scraper');
 var sqlite3 = require('sqlite3');
+var twilio = require('twilio');
 
 var config = {};
 try {
@@ -14,11 +15,14 @@ try {
 }
 config.query.prefs.scrapeInnerAd = false;
 
+var twilioClient = new twilio.RestClient(config.notification.twilioSid,
+                                         config.notification.twilioToken);
+
 var heuristics = {};
 fs.readdirSync(__dirname + '/heuristics').forEach(function(file) {
     if (file.match(/.js$/)) {
         var heuristic = require('./heuristics/' + file);
-        for (key in heuristic) {
+        for (var key in heuristic) {
             heuristics[key] = heuristic[key];
         }
     }
@@ -30,7 +34,7 @@ var defineSchema = function () {
     return new Promise(function (resolve) {
         console.log('Defining database schema...');
 
-        db.run('create table if not exists ad (link text primary key, summary json, details json)', function () {
+        db.run('create table if not exists ad (link text primary key, summary json, details json, notified bool default 0)', function () {
             db.run('create table if not exists score (link text, heuristic text, score double, foreign key (link) references ad (link))', function () {
                 db.run('drop table if exists heuristic', function () {
                     db.run('create table heuristic (heuristic text primary key)', function () {
@@ -160,6 +164,71 @@ left join score on score.link = ad.link and score.heuristic = heuristic.heuristi
                         }
                     });
                 });
+            }
+        });
+    });
+};
+
+var sendNotificationsForNewAds = function () {
+    return new Promise(function (resolve) {
+        console.log('Sending notifications for new ads...');
+
+        var ads = {};
+        db.all(`
+select ad.link,
+       ad.summary,
+       ad.details,
+       score.heuristic,
+       score.score
+  from ad, score
+ where score.link = ad.link
+   and ad.notified = 0
+               `, function (err, rows) {
+            if (err !== null) {
+                console.log(err);
+                resolve();
+            } else if (rows.length == 0) {
+                console.log('No unnotified ads.');
+                resolve();
+            } else {
+                rows.forEach(function (row) {
+                    if (ads[row.link] === undefined) {
+                        var summary = JSON.parse(row.summary);
+                        var details = JSON.parse(row.details);
+
+                        ads[row.link] = {
+                            link: row.link,
+                            title: summary.title,
+                            price: details.info.Price,
+                            image: details.image,
+                            scores: {}
+                        };
+                    }
+
+                    ads[row.link].scores[row.heuristic] = row.score;
+                });
+
+                var filteredAds = Object.values(ads).filter(
+                    (ad) => Object.values(ad.scores).filter(
+                        (score) => score < config.notification.scoreThreshold).length === 0);
+
+                filteredAds.forEach(function (ad) {
+                    var body = ad.title + ' (' + ad.price + ')\n' + ad.link + '\n';
+                    for (var score in ad.scores) {
+                        body += '\n' + score + ': ' + ad.scores[score];
+                    }
+
+                    twilioClient.messages.create({
+                        body: body,
+                        mediaUrl: ad.image,
+                        to: config.notification.twilioTo,
+                        from: config.notification.twilioFrom
+                    });
+
+                    db.run('update ad set notified = 1 where link = ?', ad.link);
+                });
+
+                console.log('Sent notifications.');
 
                 resolve();
             }
@@ -172,6 +241,7 @@ var process = function ()
     queryAdsIntoDatabase()
         .then(() => scrapeAllUnscrapedAds())
         .then(() => scoreAllAdsMissingScores())
+        .then(() => sendNotificationsForNewAds())
         .then(() => setTimeout(process, config.query.interval));
 }
 

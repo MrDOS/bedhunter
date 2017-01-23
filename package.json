@@ -15,6 +15,7 @@
   "dependencies": {
     "@google/maps": "^0.3.1",
     "kijiji-scraper": "git+https://github.com/mwpenny/kijiji-scraper.git",
-    "sqlite3": "^3.1.8"
+    "sqlite3": "^3.1.8",
+    "twilio": "^2.11.1"
   }
 }

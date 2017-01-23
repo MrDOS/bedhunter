@@ -8,5 +8,12 @@
         "params": {
             "adType": "OFFER"
         }
+    },
+    "notification": {
+        "scoreThreshold": 20,
+        "twilioSid": "",
+        "twilioToken": "",
+        "twilioFrom": "",
+        "twilioTo": ""
     }
 }
