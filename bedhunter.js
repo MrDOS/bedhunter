@@ -125,7 +125,15 @@ var scoreAllAdsMissingScores = function () {
     return new Promise(function (resolve) {
         console.log('Scoring ads...');
 
-        db.all('select heuristic.heuristic, ad.summary, ad.details from heuristic left join ad left join score on score.link = ad.link where score.score is null', function (err, rows) {
+        db.all(`
+   select heuristic.heuristic,
+          ad.summary,
+          ad.details
+     from heuristic
+left join ad
+left join score on score.link = ad.link and score.heuristic = heuristic.heuristic
+    where score.score is null
+               `, function (err, rows) {
             if (err !== null) {
                 console.log(err);
                 resolve();
