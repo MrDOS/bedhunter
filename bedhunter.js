@@ -229,7 +229,7 @@ select *
                         from: config.notification.twilioFrom
                     });
 
-                    db.run('update ad set notified = 1 where link = ?', ad.link);
+                    db.run('update ad set notified = 1 where link = ?', ads[ad].link);
                 }
 
                 console.log('Sent notifications.');
