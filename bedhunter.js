@@ -137,6 +137,7 @@ var scoreAllAdsMissingScores = function () {
 left join ad
 left join score on score.link = ad.link and score.heuristic = heuristic.heuristic
     where score.score is null
+      and ad.details is not null
                `, function (err, rows) {
             if (err !== null) {
                 console.log(err);
@@ -175,15 +176,19 @@ var sendNotificationsForNewAds = function () {
 
         var ads = {};
         db.all(`
-select ad.link,
-       ad.summary,
-       ad.details,
-       score.heuristic,
-       score.score
-  from ad, score
- where score.link = ad.link
-   and ad.notified = 0
-               `, function (err, rows) {
+select *
+  from (select ad.link,
+               ad.summary,
+               ad.details,
+               onescore.heuristic,
+               onescore.score,
+               min(allscore.score) as minscore
+          from ad, score onescore, score allscore
+         where onescore.link = ad.link
+           and allscore.link = ad.link
+      group by ad.link, onescore.heuristic)
+ where minscore >= ?
+               `, config.notification.scoreThreshold, function (err, rows) {
             if (err !== null) {
                 console.log(err);
                 resolve();
@@ -208,36 +213,21 @@ select ad.link,
                     ads[row.link].scores[row.heuristic] = row.score;
                 });
 
-                var filteredAds = [];
                 for (var ad in ads) {
-                    var pass = true;
+                    var body = ads[ad].title + ' (' + ads[ad].price + ')\n' + ads[ad].link + '\n';
                     for (var score in ads[ad].scores) {
-                        if (ads[ad].scores[score] < config.notification.scoreThreshold) {
-                            pass = false;
-                            break;
-                        }
-                    }
-
-                    if (pass) {
-                        filteredAds.push(ads[ad]);
-                    }
-                }
-
-                filteredAds.forEach(function (ad) {
-                    var body = ad.title + ' (' + ad.price + ')\n' + ad.link + '\n';
-                    for (var score in ad.scores) {
-                        body += '\n' + score + ': ' + parseInt(ad.scores[score]);
+                        body += '\n' + score + ': ' + parseInt(ads[ad].scores[score]);
                     }
 
                     twilioClient.messages.create({
                         body: body,
-                        mediaUrl: ad.image,
+                        mediaUrl: ads[ad].image,
                         to: config.notification.twilioTo,
                         from: config.notification.twilioFrom
                     });
 
                     db.run('update ad set notified = 1 where link = ?', ad.link);
-                });
+                }
 
                 console.log('Sent notifications.');
 
