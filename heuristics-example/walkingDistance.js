@@ -19,8 +19,17 @@ exports.walkingDistance = function (ad, callback) {
             callback(err, null);
         }
 
-        var distance = res.json.rows[0].elements[0].distance.value;
-        var score = Math.max(0, 100 - Math.max(distance - ACCEPTABLE_RADIUS, 0) / DEDUCTION_DISTANCE);
-        callback(null, score);
+        var result = res.json.rows[0].elements[0];
+        if (result.status === 'OK') {
+            var distance = result.distance.value;
+            var score = Math.max(0, 100 - Math.max(distance - ACCEPTABLE_RADIUS, 0) / DEDUCTION_DISTANCE);
+            callback(null, score);
+        } else if (result.status === 'ZERO_RESULTS') {
+            /* ZERO_RESULTS is a failure of the data, not the API, so we need to
+             * return a real score lest we try over and over again. */
+            callback(null, 0);
+        } else {
+            callback(result.status, null);
+        }
     });
 };
