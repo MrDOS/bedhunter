@@ -222,14 +222,18 @@ select *
                         body += '\n' + score + ': ' + parseInt(ads[ad].scores[score]);
                     }
 
-                    twilioClient.messages.create({
-                        body: body,
-                        mediaUrl: ads[ad].image,
-                        to: config.notification.twilioTo,
-                        from: config.notification.twilioFrom
-                    });
+                    if (config.notification.debug === true) {
+                        console.log(body);
+                    } else {
+                        twilioClient.messages.create({
+                            body: body,
+                            mediaUrl: ads[ad].image,
+                            to: config.notification.twilioTo,
+                            from: config.notification.twilioFrom
+                        });
 
-                    db.run('update ad set notified = 1 where link = ?', ads[ad].link);
+                        db.run('update ad set notified = 1 where link = ?', ads[ad].link);
+                    }
                 }
 
                 console.log('Sent notifications.');
