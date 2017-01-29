@@ -34,6 +34,7 @@ var defineSchema = function () {
     return new Promise(function (resolve) {
         console.log('Defining database schema...');
 
+        /* TODO: Promises. My kingdom for promises. */
         db.run('create table if not exists ad (link text primary key, summary json, details json, notified bool default 0)', function () {
             db.run('create table if not exists score (link text, heuristic text, score double, foreign key (link) references ad (link))', function () {
                 db.run('drop table if exists heuristic', function () {
@@ -168,6 +169,7 @@ left join score on score.link = ad.link and score.heuristic = heuristic.heuristi
             }
         });
     });
+    /* You might think this pyramid of doom is heinous. You'd be correct. */
 };
 
 var sendNotificationsForNewAds = function () {

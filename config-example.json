@@ -10,6 +10,7 @@
         }
     },
     "notification": {
+        "debug": true,
         "scoreThreshold": 20,
         "twilioSid": "",
         "twilioToken": "",
