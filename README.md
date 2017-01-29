@@ -22,7 +22,7 @@ more precisely
 than by the simple filtering available
 in Kijiji's web interface,
 and by searching regularly
-t can notify you about listings
+it can notify you about listings
 which you might otherwise miss.
 
 ## Getting Started
