@@ -30,8 +30,7 @@ exports.walkingDistance = function (ad, callback) {
         /* We can't calculate a score without location data and never will be
          * able to, so we need to return a real score to prevent retrying the
          * calculation every time scoring runs. */
-        callback(null, 0);
-        return;
+        return callback(null, 0);
     }
 
     googleMapsClient.distanceMatrix({
@@ -40,22 +39,22 @@ exports.walkingDistance = function (ad, callback) {
         mode: 'walking',
         units: 'metric'
     }, function (err, res) {
-        if (err != null) {
-            callback(err, null);
+        if (err !== null) {
+            return callback(err, null);
         }
 
         var result = res.json.rows[0].elements[0];
         if (result.status === 'OK') {
             var distance = result.distance.value;
             var score = Math.max(0, 100 - Math.max(distance - GOAL_RADIUS, 0) / DEDUCTION_STEP);
-            callback(null, score);
+            return callback(null, score);
         } else if (result.status === 'ZERO_RESULTS') {
             /* ZERO_RESULTS is a failure of the data, not the API, so as above,
              * we need to return a real score. */
-            callback(null, 0);
+            return callback(null, 0);
         } else {
             console.log('%s:', ad.link, result.status);
-            callback(result.status, null);
+            return callback(result.status, null);
         }
     });
 };

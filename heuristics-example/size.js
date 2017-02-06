@@ -16,8 +16,7 @@ var RANKS = {
 exports.size = function (ad, callback) {
     for (rank in RANKS) {
         if (ad.link.match(rank)) {
-            callback(null, RANKS[rank]);
-            break;
+            return callback(null, RANKS[rank]);
         }
     }
 };

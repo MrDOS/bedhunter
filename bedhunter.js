@@ -5,14 +5,7 @@ var kijiji = require('kijiji-scraper');
 var sqlite3 = require('sqlite3');
 var twilio = require('twilio');
 
-var config = {};
-try {
-    config = require('./config.json');
-} catch (e) {
-    console.log("Failed to load configuration:");
-    console.log(e);
-    process.exit(1);
-}
+var config = require('./config.json');
 config.query.prefs.scrapeInnerAd = false;
 
 var twilioClient = new twilio.RestClient(config.notification.twilioSid,
@@ -70,7 +63,7 @@ var queryAdsIntoDatabase = function () {
             if (err !== null) {
                 console.log(err);
                 resolve();
-            } else if (ads.length == 0) {
+            } else if (ads.length === 0) {
                 console.log('Kijiji returned no ads.');
                 resolve();
             } else {
@@ -96,11 +89,11 @@ var scrapeAllUnscrapedAds = function () {
         console.log('Retrieving ad details...');
 
         db.all('select link, summary from ad where details is null', function (err, ads) {
-            if (err != null)
+            if (err !== null)
             {
                 console.log(err);
                 resolve();
-            } else if (ads.length == 0) {
+            } else if (ads.length === 0) {
                 console.log('No ads without details.');
                 resolve();
             } else {
@@ -109,7 +102,7 @@ var scrapeAllUnscrapedAds = function () {
 
                 ads.forEach(function (ad) {
                     kijiji.scrape(ad.link, function (err, details) {
-                        if (err == null) {
+                        if (err === null) {
                             ad.innerAd = details;
                             stmt.run(JSON.stringify(details), ad.link);
                         }
@@ -143,7 +136,7 @@ left join score on score.link = ad.link and score.heuristic = heuristic.heuristi
             if (err !== null) {
                 console.log(err);
                 resolve();
-            } else if (rows.length == 0) {
+            } else if (rows.length === 0) {
                 console.log('No unscored ads.');
                 resolve();
             } else {
@@ -155,7 +148,7 @@ left join score on score.link = ad.link and score.heuristic = heuristic.heuristi
                     ad.innerAd = JSON.parse(row.details);
 
                     heuristics[row.heuristic](ad, function (err, score) {
-                        if (err == null) {
+                        if (err === null) {
                             stmt.run(ad.link, row.heuristic, score);
                         }
 
@@ -197,7 +190,7 @@ select *
             if (err !== null) {
                 console.log(err);
                 resolve();
-            } else if (rows.length == 0) {
+            } else if (rows.length === 0) {
                 console.log('No unnotified ads.');
                 resolve();
             } else {
@@ -221,7 +214,7 @@ select *
                 for (var ad in ads) {
                     var body = ads[ad].title + ' (' + ads[ad].price + ')\n' + ads[ad].link + '\n';
                     for (var score in ads[ad].scores) {
-                        body += '\n' + score + ': ' + parseInt(ads[ad].scores[score]);
+                        body += '\n' + score + ': ' + parseInt(ads[ad].scores[score], 10);
                     }
 
                     if (config.notification.debug === true) {

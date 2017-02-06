@@ -26,8 +26,7 @@ exports.parking = function (ad, callback) {
         var pattern = CRITERIA[i][0];
         var score = CRITERIA[i][1];
         if (description.match(pattern)) {
-            callback(null, score);
-            break;
+            return callback(null, score);
         }
     }
 };
