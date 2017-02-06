@@ -11,6 +11,8 @@ the way they are.)
 
 # Bedhunter
 
+[![Code Climate](https://codeclimate.com/github/MrDOS/bedhunter/badges/gpa.svg)](https://codeclimate.com/github/MrDOS/bedhunter)
+
 Bedhunter crawls Kijiji
 looking for apartments
 so you don't have to.
