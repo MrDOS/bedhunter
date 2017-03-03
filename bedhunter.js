@@ -1,6 +1,10 @@
 #! /usr/bin/env node
 
+/* The dynamic heuristic loading throws ESLint for a loop. */
+/* eslint-disable global-require */
+
 var fs = require('fs');
+var path = require('path');
 var kijiji = require('kijiji-scraper');
 var sqlite3 = require('sqlite3');
 
@@ -14,7 +18,7 @@ if (config.notification.mode === undefined) {
 var notifier = require('./notifiers/' + config.notification.mode + '.js')(config.notification);
 
 var heuristics = {};
-fs.readdirSync(__dirname + '/heuristics').forEach(function(file) {
+fs.readdirSync(path.join(__dirname, 'heuristics')).forEach(function(file) {
     if (file.match(/.js$/)) {
         var heuristic = require('./heuristics/' + file);
         for (var key in heuristic) {
