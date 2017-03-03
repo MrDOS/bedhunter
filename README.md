@@ -86,8 +86,10 @@ looks something like this:
         }
     },
     "notification": {
-        "debug": true,
         "scoreThreshold": 20,
+
+        "mode": true,
+
         "twilioSid": "",
         "twilioToken": "",
         "twilioFrom": "",
@@ -108,15 +110,17 @@ Here's what the configuration keys mean:
         for details.
 * `notification`: Configures what and how notifications
     are sent.
-    * `debug`: Indicates that the user
-        is still fine-tuning heuristic functions,
-        that text notifications
-        should be suppressed,
-        and that notifications
-        should be shown on the console instead.
     * `scoreThreshold`: Notifications will only be generated
         for listings where all scores
         meet or exceed this threshold.
+    * `mode`: Indicates how the user
+        should be notified.
+        Supported modes
+        are `debug`,
+        which is a simple console logger,
+        and `twilio`,
+        which uses [Twilio](http://twilio.com/)
+        to send SMS notifications.
     * `twilioSid` and `twilioToken`: The SID and token
         of your Twilio account.
     * `twilioFrom`: Your Twilio phone number.
