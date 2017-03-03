@@ -3,13 +3,15 @@
 var fs = require('fs');
 var kijiji = require('kijiji-scraper');
 var sqlite3 = require('sqlite3');
-var twilio = require('twilio');
 
 var config = require('./config.json');
 config.query.prefs.scrapeInnerAd = false;
 
-var twilioClient = new twilio.RestClient(config.notification.twilioSid,
-                                         config.notification.twilioToken);
+if (config.notification.mode === undefined) {
+    console.log('Warning: no notification mode defined. Falling back to "debug".')
+    config.notification.mode = 'debug';
+}
+var notifier = require('./notifiers/' + config.notification.mode + '.js')(config.notification);
 
 var heuristics = {};
 fs.readdirSync(__dirname + '/heuristics').forEach(function(file) {
@@ -212,23 +214,8 @@ select *
                 });
 
                 for (var ad in ads) {
-                    var body = ads[ad].title + ' (' + ads[ad].price + ')\n' + ads[ad].link + '\n';
-                    for (var score in ads[ad].scores) {
-                        body += '\n' + score + ': ' + parseInt(ads[ad].scores[score], 10);
-                    }
-
-                    if (config.notification.debug === true) {
-                        console.log(body);
-                    } else {
-                        twilioClient.messages.create({
-                            body: body,
-                            mediaUrl: ads[ad].image,
-                            to: config.notification.twilioTo,
-                            from: config.notification.twilioFrom
-                        });
-
-                        db.run('update ad set notified = 1 where link = ?', ads[ad].link);
-                    }
+                    notifier(ads[ad]);
+                    db.run('update ad set notified = 1 where link = ?', ads[ad].link);
                 }
 
                 console.log('Sent notifications.');
